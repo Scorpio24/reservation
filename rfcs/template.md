@@ -34,7 +34,7 @@ enum ReservationUpdateType {
 
 message Reservation {
     string id = 1;
-    string user_id = 3;
+    string user_id = 2;
     ReservationStatus status = 3;
 
     string resource_id = 4;
@@ -96,7 +96,8 @@ message QueryRequest {
 
 message ListenRequest {}
 message ListenResponse {
-    int
+    int8 op = 1;
+    Reservation reservation = 2;
  }
 
 service ReservationService {
