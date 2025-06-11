@@ -120,7 +120,7 @@ CREATE SCHEMA rsvp;
 CREATE TYPE rsvp.reservation_status AS ENUM ('unknown', 'pending', 'confirmed', 'blocked');
 CREATE TYPE rsvp.reservation_update_type AS ENUM ('unknown', 'create', 'update', 'delete');
 
-CREATE TABLE reservation (
+CREATE TABLE rsvp.reservations (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     user_id VARCHAR(64) NOT NULL,
     status rsvp.reservation_status NOT NULL DEFAULT 'pending',
@@ -140,16 +140,16 @@ CREATE INDEX reservation_user_id_idx ON rsvp.reservations (user_id);
 -- 如果resource_id是null，找到时间段内用户对应所有预订。
 -- 如果两个都是null，找到时间段内所有预订。
 -- 如果两个都不为null，找到时间段内对应用户和对应资源的所有预订。
-CREATE OR REPLACE FUNCTION rsvp.query(uid text, rid text, during: tstzrange) RETURNS TABLE rsvp.reservations AS $$ $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION rsvp.query(uid text, rid text, during tstzrange) RETURNS TABLE (LIKE rsvp.reservations) AS $$ $$ LANGUAGE plpgsql;
 
 -- resevation改变记录队列
 CREATE TABLE rsvp.reservation_changes (
-    id serial PRIMARY KEY,
+    id serial NOT NULL,
     reservation_id uuid  NOT NULL,
-    op rsvp.reservation_update_type NOT NULL,
-)
+    op rsvp.reservation_update_type NOT NULL
+);
 -- 设置一个在add/update/delete时的触发器。
-CREATE OR REPLACE FUNCTION rsvp.reservation_trigger() RETURNS TRIGGER AS 
+CREATE OR REPLACE FUNCTION rsvp.reservations_trigger() RETURNS TRIGGER AS 
 $$ 
 BEGIN
     IF (TG_OP = 'INSERT') THEN
@@ -161,15 +161,15 @@ BEGIN
     ELSIF (TG_OP = 'DELETE') THEN
         INSERT INTO rsvp.reservation_changes (reservation_id, op) VALUES (OLD.id, 'delete');
     END IF;
-    NOTIFY reservation_update, NEW.id;
+    NOTIFY reservation_update;
     RETURN NULL;
 END;
 END
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER rsvp.reservation_trigger
+CREATE TRIGGER reservations_trigger
     AFTER INSERT OR UPDATE OR DELETE ON rsvp.reservations
-    FOR EACH ROW EXECUTE PROCEDURE rsvp.reservation_trigger();
+    FOR EACH ROW EXECUTE PROCEDURE rsvp.reservations_trigger();
 ```
 
 这里我们使用postgres的“EXCLUDE”constraint去确保在给定时间内，对给定资源的预订只有一个。
