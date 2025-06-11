@@ -3,6 +3,7 @@ package reservation;
 
 import "google/protobuf/timestamp.proto";
 
+// Defines the possible states of a reservation.
 enum ReservationStatus {
     RESERVATION_STATUS_UNKNOWN = 0;
     RESERVATION_STATUS_PENDING = 1;
@@ -10,6 +11,7 @@ enum ReservationStatus {
     RESERVATION_STATUS_BLOCKED = 3;
 }
 
+// Defines the possible types of reservation updates.
 enum ReservationUpdateType {
     RESERVATION_UPDATE_TYPE_UNKNOWN = 0;
     RESERVATION_UPDATE_TYPE_CREATE = 1;
@@ -17,6 +19,7 @@ enum ReservationUpdateType {
     RESERVATION_UPDATE_TYPE_DELETE = 3;
 }
 
+// Represents a reservation, including its ID, user ID, status, resource information, time period, and notes.
 message Reservation {
     string id = 1;
     string user_id = 2;
@@ -29,62 +32,82 @@ message Reservation {
     string note = 7;
 }
 
+// The request message for creating a reservation, containing the reservation information.
 message ReserveRequest {
     Reservation reservation = 1;
 }
 
+// The response message for creating a reservation, containing the created reservation information.
 message ReserveResponse {
     Reservation reservation = 1;
 }
 
+// The request message for updating a reservation, containing the updated notes.
 message UpdateRequest {
     string note  = 1;
 }
 
+// The response message for updating a reservation, containing the updated reservation information.
 message UpdateResponse {
     Reservation reservation = 1;
 }
 
+// The request message for confirming a reservation, containing the reservation ID.
 message ConfirmRequest {
     string id  = 1;
 }
 
+// The response message for confirming a reservation, containing the confirmed reservation information.
 message ConfirmResponse {
     Reservation reservation = 1;
 }
 
+// The request message for canceling a reservation, containing the reservation ID.
 message CancelRequest {
     string id  = 1;
 }
 
+// The response message for canceling a reservation, containing the canceled reservation information.
 message CancelResponse {
     Reservation reservation = 1;
 }
 
+// The request message for getting a reservation, containing the reservation ID.
 message GetRequest {
     string id  = 1;
 }
 
+// The response message for getting a reservation, containing the requested reservation information.
 message GetResponse {
     Reservation reservation = 1;
 }
 
-message QueryRequest {
+// The query message for reservations, containing user_id, resource_id, start time, end time, and status for filtering.
+message ReservationQuery { 
     string resouce_id  = 1;
     string user_id  = 2;
 
-    //use status to filter result.If UNKNOWN, return all.
+    // Use status to filter results. If UNKNOWN, return all.
     ReservationStatus status = 3;
     google.protobuf.Timestamp start = 4;
     google.protobuf.Timestamp end = 5;
 }
 
+// The request message for querying reservations, containing the query conditions.
+message QueryRequest {
+    ReservationQuery query = 1;
+}
+
+// The request message for listening to reservation updates, currently empty.
 message ListenRequest {}
+
+// The response message for listening to reservation updates, containing the update type and reservation information.
 message ListenResponse {
     ReservationUpdateType op=1;
     Reservation reservation=2;
- }
+}
 
+// Defines the reservation service, including methods for creating, confirming, updating, canceling, querying, and listening to reservations.
 service ReservationService {
     rpc reserve(ReserveRequest) returns (ReserveResponse);
     rpc confirm(ConfirmRequest) returns (ConfirmResponse);
@@ -92,6 +115,6 @@ service ReservationService {
     rpc cancle(CancelRequest) returns (CancelResponse);
     rpc get(GetRequest) returns (GetResponse);
     rpc query(QueryRequest) returns (stream Reservation);
-    // 其他系统可以监听最近添加的预约。
+    // Other systems can listen for recently added reservations.
     rpc listen(ListenRequest) returns (stream Reservation);
 }
